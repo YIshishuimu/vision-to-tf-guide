@@ -186,7 +186,7 @@ mkdir -p local_config
 cp src/kfs_alignment/config/cube_pose_estimator.yaml local_config/student.yaml
 ```
 
-编辑 `local_config/student.yaml`，保留外层节点名和 `ros__parameters`。下面是需要调整的部分，**不要用它覆盖完整文件**：
+打开文件编辑，保留外层节点名和 `ros__parameters`。在终端可运行 `nano local_config/student.yaml`；nano 中按 `Ctrl+O`、回车保存，再按 `Ctrl+X` 退出。下面是需要调整的部分，**不要用它覆盖完整文件**：
 
 ```yaml
 cube_pose_estimator:
@@ -216,8 +216,8 @@ cube_pose_estimator:
 
 另外必须更新：
 
-- `camera.intrinsics`：本机相机标定得到的 `fx/fy/cx/cy`。
-- `camera.distortion`：与输入图像匹配的畸变参数。
+- `camera.intrinsics`：本机相机标定得到的 `fx/fy/cx/cy`。标定完成后就把数值填在此配置文件的 `camera.intrinsics` 下。
+- `camera.distortion`：标定得到的畸变系数，按 `[k1, k2, p1, p2, k3]` 顺序填写，并确保对应节点实际接收的图像。
 - `target.cube_size_mm`：实际立方体边长，单位 mm。
 - 图像尺寸：示例的 640×480 只是取图起点，必须确认设备实际支持，并用该尺寸标定。仓库原配置的 USB 宽度为 128，不能盲目沿用。
 - 模型路径：写真实绝对路径，YAML 中的 `~` 或 `$HOME` 不应假设会被自动展开。
@@ -237,7 +237,15 @@ ros2 run kfs_alignment cube_pose_node --ros-args \
   -p use_grayscale:=false
 ```
 
-此处显式指定节点名，确保能匹配 YAML 的 `cube_pose_estimator` 参数块。灰度模式可在基础链路运行后作为对比实验。
+此处显式指定节点名，确保能匹配 YAML 的 `cube_pose_estimator` 参数块。`--params-file` 会在节点启动时加载该 YAML。修改配置后，先用 `Ctrl+C` 停止节点，再重新运行启动命令，参数才会重新读取。灰度模式可在基础链路运行后作为对比实验。
+
+可在另一个已加载 ROS 环境的终端确认节点读取了标定值：
+
+```bash
+ros2 param get /cube_pose_estimator camera.intrinsics.fx
+```
+
+输出应与 `student.yaml` 中填写的 `fx` 一致。
 
 **本任务不要使用 `kfs_align.launch.py` 作为启动入口**：它还会启动底盘控制节点。`cube_pose_estimator_with_fusion.launch.py` 会额外启动融合节点，也不是本任务必需。上述 `ros2 run` 只运行视觉节点。
 
